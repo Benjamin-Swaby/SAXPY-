@@ -67,19 +67,28 @@ int main()
     int threads_per_block = 512;
     printf("number of sms :%d \n", props.multiProcessorCount);
     int number_of_blocks = props.multiProcessorCount * multi;
+	
+	cudaStream_t stream_result; cudaStreamCreate(&stream_result);
+	cudaStream_t stream_x; cudaStreamCreate(&stream_x);
+	cudaStream_t stream_y; cudaStreamCreate(&stream_y);
+
+    fill<<<threads_per_block,number_of_blocks, 0 , stream_result>>>(result, 0.0); //result
+    fill<<<threads_per_block,number_of_blocks, 0 , stream_x>>>(x, 1.0); // array x 
+    fill<<<threads_per_block,number_of_blocks, 0 , stream_y>>>(y, 2.0); // array y
+	
+	cudaStreamDestroy(stream_result); cudaStreamDestroy(stream_x); cudaStreamDestroy(stream_y);	
     
-    fill<<<threads_per_block,number_of_blocks>>>(result, 0.0); //result
-    fill<<<threads_per_block,number_of_blocks>>>(x, 1.0); // array x 
-    fill<<<threads_per_block,number_of_blocks>>>(y, 2.0); // array y
-    
-    
+
     //error variables
     cudaError_t addVectorsErr;
     cudaError_t asyncErr;
 
     saxpy <<< number_of_blocks, threads_per_block >>> ( x, y, result );
     cudaMemPrefetchAsync(result, size, cudaCpuDeviceId);
-    addVectorsErr = cudaGetLastError();
+    
+	
+	addVectorsErr = cudaGetLastError();
+
     if(addVectorsErr != cudaSuccess) printf("Error: %s\n", cudaGetErrorString(addVectorsErr));
 
     asyncErr = cudaDeviceSynchronize();
